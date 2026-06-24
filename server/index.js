@@ -1,0 +1,43 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const authRoutes = require("./routes/authRoute");
+// const refreshRoute = require("./routes/refresh");
+const profileRoute = require("./routes/profileRoute");
+const dbConnect = require('./utils/dbConnect');
+const cookieParser = require("cookie-parser");
+// const plaidRoutes = require("./routes/plaid");
+
+const app = express();
+app.use(express.json());
+app.use(cookieParser());
+app.use(cors({
+    origin:[
+        "http://localhost:5173",
+        // "https://financial-dashboard-teal-eta.vercel.app"
+    ],
+    credentials:true,
+    methods:[
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "PATCH"
+    ],
+    allowedHeaders:[
+        "Content-Type",
+        "Authorization"
+    ]
+}));
+app.use("/api",authRoutes);
+// app.use("/api/refresh",refreshRoute)
+app.use("/api/profile",profileRoute)
+// app.use("/api",profileRoute);
+// app.use("/api", plaidRoutes);
+
+dbConnect();
+
+const port = process.env.PORT || 3001;
+app.listen(port, "0.0.0.0", () => {
+    console.log(`Server is running on port ${port}`);
+});
