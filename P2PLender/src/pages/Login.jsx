@@ -5,16 +5,16 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../utils/AuthContext";
-// import ChangePasswordModal from "../components/ChangePassword"; 
+import ChangePasswordModal from "../components/ChangePassword"; 
 const API_URL = import.meta.env.VITE_API_URL;
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
   const {accessToken,setAccessToken} = useContext(AuthContext);
-  // const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
-  // const [regStep, setRegStep] = useState(1); 
-  // const [otp, setOtp] = useState("");
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [regStep, setRegStep] = useState(1); 
+  const [otp, setOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const {
     register,
@@ -66,70 +66,51 @@ const Login = () => {
           setMessage(error.response?.data?.message || "Login Failed");
           setIsSubmitting(false);
         }
-      } else {
-        try{ 
-          const result = await axios.post(`${API_URL}/api/register`,data,);
-          if(result){
-            console.log(result.data.user)
-            setMessage("User registered successfully");
-            setIsSubmitting(false);
-          }
-        } catch (error){
-          setIsLogin(false);
-          if(error.response.data.error.includes('E11000')){
-            setIsError(true);
-            setMessage("User already exists")
-            if(window.confirm('User already exists'))
-              reset();
-          }
-        }
+      }else{
+          if (regStep === 1) {
+             try{
+               await axios.post(`${API_URL}/api/sendRegistrationOTP`, { email: data.email });
+               setIsError(false);
+               setMessage("OTP sent to your email. Please verify.");
+               setRegStep(2); 
+             }catch(error){
+               setIsError(true);
+               setMessage(error.response?.data?.message || "Failed to send OTP");
+             }finally{
+               setIsSubmitting(false);
+           }
+          }else if(regStep === 2) {
+             if (!otp || otp.length !== 6) {
+               setIsError(true);
+               setMessage("Please enter a valid 6-digit OTP");
+               setIsSubmitting(false);
+               return;
+             }try{
+               const currentData = watch();
+               const payload = { ...currentData, otp: otp };
+               await axios.post(`${API_URL}/api/registerWithOTP`, payload);
+               setIsError(false);
+               setMessage("Registration Successful!");
+               setTimeout(() => {
+               setIsLogin(true);
+               setRegStep(1); // Reset step back to 1
+               setOtp("");
+               reset();
+              }, 2000);
+             }catch(error) {
+               setIsError(true);
+               setMessage(error.response?.data?.message || "Registration failed. Invalid OTP.");
+            }finally{
+              setIsSubmitting(false);
+           }
+         }
       }
-    }
-  //     else{
-  //       if (regStep === 1) {
-  //         try{
-  //           await axios.post(`${API_URL}/api/sendRegistrationOTP`, { email: data.email });
-  //           setIsError(false);
-  //           setMessage("OTP sent to your email. Please verify.");
-  //           setRegStep(2); 
-  //         }catch(error){
-  //           setIsError(true);
-  //           setMessage(error.response?.data?.message || "Failed to send OTP");
-  //         }finally{
-  //           setIsSubmitting(false);
-  //         }
-  //       } 
-  //       else if (regStep === 2) {
-  //         if (!otp || otp.length !== 6) {
-  //           setIsError(true);
-  //           setMessage("Please enter a valid 6-digit OTP");
-  //           setIsSubmitting(false);
-  //           return;
-  //         }
-  //         try {
-  //           const payload = { ...data, otp: otp };
-  //           await axios.post(`${API_URL}/api/registerWithOTP`, payload);
-  //           setIsError(false);
-  //           setMessage("Registration Successful!");
-  //           setTimeout(() => {
-  //             setIsLogin(true);
-  //             setRegStep(1); // Reset step back to 1
-  //             setOtp("");
-  //             reset();
-  //           }, 2000);
-  //         } catch (error) {
-  //           setIsError(true);
-  //           setMessage(error.response?.data?.message || "Registration failed. Invalid OTP.");
-  //         } finally {
-  //           setIsSubmitting(false);
-  //         }
-  //       }
-  //     }
-  // }
+   }
+
   const toggleMode = () => {
     setIsLogin(!isLogin);
-    // setRegStep(1);
-    // setOtp("");
+    setRegStep(1);
+    setOtp("");
     setMessage("");
     reset();
   };
@@ -218,7 +199,7 @@ const Login = () => {
               )}
 
               {/* 3. ADDED THE "FORGOT PASSWORD" TRIGGER UNDER THE PASSWORD FIELD */}
-              {/* {isLogin && (
+              { isLogin && (
                 <div className="flex justify-end mt-2">
                   <button
                     type="button"
@@ -228,9 +209,9 @@ const Login = () => {
                     Forgot Password?
                   </button>
                 </div>
-              )} */}
+              )}
             </div>
-            {!isLogin && (
+            {!isLogin && regStep === 1 &&(
               <>
                 <div>
                   <label className="block mb-2 text-gray-700 font-medium">Confirm Password</label>
@@ -264,7 +245,7 @@ const Login = () => {
               </>
               
             )}
-            {/* {!isLogin && regStep === 2 && (
+            {!isLogin && regStep === 2 && (
               <div className="animate-in fade-in duration-300">
                 <label className="block mb-2 text-gray-700 font-medium">Verification Code (OTP)</label>
                 <input
@@ -284,7 +265,7 @@ const Login = () => {
                   Entered wrong email? Go back
                 </button>
               </div>
-            )} */}
+            )} 
             <button
               type="submit"
               disabled={isSubmitting}
@@ -305,10 +286,10 @@ const Login = () => {
       </div>
 
       {/* 4. MODAL ELEMENT MOUNTED HERE AT THE BASE LEVEL OF RETURN BLOCK */}
-      {/* <ChangePasswordModal 
+        <ChangePasswordModal 
         isOpen={isForgotPasswordOpen} 
         onClose={() => setIsForgotPasswordOpen(false)} 
-      /> */}
+      /> 
     </div>
   );
 };

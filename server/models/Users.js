@@ -4,8 +4,8 @@ const UserSchema = new mongoose.Schema({
     email: {type: String, required: true, unique: true},
     role: {type: String, required: true},
     password: {type: String, required: true},
-    // resetOtp: String,
-    // otpExpiry: Date,
+    resetOtp: String,
+    otpExpiry: Date,
 });
 const UserModel = mongoose.model("User",UserSchema);
 module.exports = UserModel;
