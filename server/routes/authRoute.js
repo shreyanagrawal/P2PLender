@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const jwutils = require("../utils/jwebtokenUtils");
 const {refreshCookieConfig} = require("../utils/cookieConfig")
 const nodemailer = require('nodemailer');
-
+const authMiddleware = require("../middleware/authMiddleWare");
 
 route.post("/register", async (req, res) => {
     try {
@@ -175,10 +175,16 @@ route.post("/sendRegistrationOTP", async (req, res) => {
          global.registrationOTPs[email] = { otp, expiry: otpExpiry };
 
          const mailoption = {
-             from: process.env.EMAIL,
+             from: `"P2P Platform" <${process.env.EMAIL}>`,
              to: email,
              subject: "Verify your email for registration",
-             text: `Your OTP for verification is: ${otp}`
+             html: `
+                <h2>Welcome to Peer-to-Peer (P2P) Lending Platform </h2>
+                <p>Your verification code is:</p>
+                <h1>${otp}</h1>
+                <p>This code will expire in 10 minutes.</p>
+                <p>If you did not request this code, please ignore this email.</p>
+                `
          };
 
          await transporter.sendMail(mailoption);
@@ -209,7 +215,7 @@ route.post("/registerWithOTP", async (req, res) => {
          const newUser = new UserModel({
              email,
              password: hashedPassword,
-             role
+             role:"pending"
          });
 
          await newUser.save();
@@ -217,11 +223,33 @@ route.post("/registerWithOTP", async (req, res) => {
          // Clean up cache
          delete global.registrationOTPs[email];
 
-         return res.status(201).json({ message: "Registration Successful" });
+         const {accessToken, refreshToken} = await jwutils.generateTokens(req, res, newUser);
+         res.cookie("token", refreshToken, refreshCookieConfig);
+
+         return res.status(201).json({ message: "Registration Successful",accessToken: accessToken });
 
      }catch(error) {
          res.status(500).json({ error: error.message });
      }
+});
+
+route.post("/updateRole", authMiddleware, async (req, res) => {
+    try {
+        const { role } = req.body;
+        const targetId = req.user.userId || req.user._id || req.user.id;
+        // Find user by ID from the decoded JWT token
+        const user = await UserModel.findByIdAndUpdate(
+            targetId, 
+            { role: role }, 
+            { new: true }
+        );
+        
+        if (!user) return res.status(404).json({ message: "User not found" });
+        
+        return res.status(200).json({ message: "Role updated successfully" });
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
 });
 
 // route.post("/update", async(req,res)=>{

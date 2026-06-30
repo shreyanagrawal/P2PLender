@@ -88,14 +88,15 @@ const Login = () => {
              }try{
                const currentData = watch();
                const payload = { ...currentData, otp: otp };
-               await axios.post(`${API_URL}/api/registerWithOTP`, payload);
+               const response = await axios.post(`${API_URL}/api/registerWithOTP`, payload);
+               const token = response.data.accessToken;
+               if(token){
+                localStorage.setItem("accessToken", token);
+               }
                setIsError(false);
                setMessage("Registration Successful!");
                setTimeout(() => {
-               setIsLogin(true);
-               setRegStep(1); // Reset step back to 1
-               setOtp("");
-               reset();
+                navigate("/role-selection")
               }, 2000);
              }catch(error) {
                setIsError(true);
@@ -229,19 +230,17 @@ const Login = () => {
                     <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
                   )}
                 </div>
-                <div>
-                  <label className="block mb-2 text-gray-700 font-medium">Select Role </label>
-                  <select {...register("role", {
-                      required: "User Role is required",
-                    })} className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      <option value="">Select Role</option>
-                      <option value="borrower">Borrower</option>
-                      <option value="lender">Lender</option>
-                    </select>
-                    {errors.role && (
-                      <p className="text-red-500 text-sm mt-1">{errors.role.message}</p>
-                    )}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                  {...register("terms", { required: "You must agree to the terms" })}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label className="text-gray-700 text-sm">
+                    I agree to the <button type="button" className="text-blue-600 underline">Terms and Conditions</button>
+                  </label>
                 </div>
+                    {errors.terms && <p className="text-red-500 text-sm">{errors.terms.message}</p>}
               </>
               
             )}
