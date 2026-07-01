@@ -11,7 +11,7 @@ const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
-  const {accessToken,setAccessToken} = useContext(AuthContext);
+  const { setAccessToken, setUserData } = useContext(AuthContext);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [regStep, setRegStep] = useState(1); 
   const [otp, setOtp] = useState("");
@@ -52,6 +52,7 @@ const Login = () => {
           
         const token = result.data.accessToken;
         setAccessToken(token);
+        localStorage.setItem("accessToken", token);
         const profileData = await axios.get(`${API_URL}/api/profile`,{
             headers:{
                 Authorization:
@@ -59,6 +60,12 @@ const Login = () => {
             },
             withCredentials:true
           })
+          if (profileData.data?.user) {
+            setUserData(profileData.data.user);
+            if (profileData.data.user.role) {
+              localStorage.setItem("userRole", profileData.data.user.role);
+            }
+          }
           if(profileData.status === 200)
             setTimeout(()=>{navigate("/home")},2000);
         }catch(error){
@@ -92,6 +99,7 @@ const Login = () => {
                const token = response.data.accessToken;
                if(token){
                 localStorage.setItem("accessToken", token);
+                setAccessToken(token);
                }
                setIsError(false);
                setMessage("Registration Successful!");
