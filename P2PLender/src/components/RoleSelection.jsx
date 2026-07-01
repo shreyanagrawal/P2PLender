@@ -1,8 +1,11 @@
+import { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { AuthContext } from "../utils/AuthContext";
 
 const RoleSelection = () => {
   const navigate = useNavigate();
+  const { userData, setUserData } = useContext(AuthContext);
   const API_URL = import.meta.env.VITE_API_URL;
 
   const handleRoleSelect = async (role) => {
@@ -14,6 +17,8 @@ const RoleSelection = () => {
           },
           withCredentials: true
       });
+      localStorage.setItem("userRole", role);
+      setUserData({ ...(userData || {}), role });
       navigate("/home");
     } catch (error) {
       console.error("Failed to update role", error);
